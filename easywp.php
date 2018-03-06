@@ -18,32 +18,46 @@ function rkg() { // random key generator
 }
 
 function getLatestWP(){
-	file_put_contents("wordpress.tar.gz", file_get_contents("http://wordpress.org/latest.tar.gz"));
+	file_put_contents("wordpress.zip", file_get_contents("https://wordpress.org/latest.zip"));
 }
 
 $dir = dirname(__FILE__);
 
 if(isset($_POST["check"])){
-	$mysqli = mysqli_connect($_POST["host"], $_POST["user"], $_POST["pass"], "test");
-	$res = mysqli_query($mysqli, "SHOW DATABASES");
-	while($row = mysqli_fetch_assoc($res)){
-		$options .= "<option value=\"$row[Database]\">$row[Database]</option>\n";
-	}
+    $mysqli = new mysqli($_POST["host"], $_POST["user"], $_POST["pass"]);
+    if (mysqli_connect_errno()) {
+        printf("Connect failed: %s\n", mysqli_connect_error());
+        exit();
+    }
+    $options = "";
+    if ($results = $mysqli->query("SHOW DATABASES")) {
+        foreach($results as $row) {
+            $options .= "<option value=\"" . $row['Database'] . "\">" . $row['Database'] . "</option>\n";
+        }
+    }
 	print "<select name=\"DB_NAME\">\n$options\n</select> &nbsp; &nbsp; &nbsp; &nbsp; <input type=\"text\" name=\"createnew\" id=\"createnew\"> Or enter a new one and ";
 	print "\n<button onclick=\"create_database(user.value,pass.value,host.value,createnew.value); return false;\">Create Database</button>";
 	print "\n<br /><span id=\"create_status\"></span>";
 	exit();
 } elseif(isset($_POST["create"])) {
-	$mysqli = mysqli_connect($_POST["host"], $_POST["user"], $_POST["pass"], "test");
-	if (mysqli_query($mysqli, "CREATE DATABASE ".$_POST["database"])) {
+    $sql = "CREATE DATABASE ".$_POST["database"];
+    $mysqli = new mysqli($_POST["DB_HOST"], $_POST["DB_USER"], $_POST["DB_PASSWORD"]);
+    if (mysqli_connect_errno()) {
+        printf("Connect failed: %s\n", mysqli_connect_error());
+        exit();
+    }
+    if ($mysqli->query($sql)) {
 		echo "\nDatabase $_POST[database] created successfully";
 	} else {
 		echo "\nError creating database: " . mysqli_error($mysqli);
 	}
+    $mysqli->close();
 	echo "\n<br />Click the <u>Check available database</u> button again.";
 	exit();
 } elseif(isset($_POST["process"]) && $_POST["process"]=="true"){
-	if(!isset($_POST["doanyway"]) && @mysql_connect($_POST["DB_HOST"], $_POST["DB_USER"], $_POST["DB_PASSWORD"])===FALSE){
+    $mysqli = new mysqli($_POST["DB_HOST"], $_POST["DB_USER"], $_POST["DB_PASSWORD"]);
+    $mysqli->close();
+	if(!isset($_POST["doanyway"]) && mysqli_connect_errno() > 0) {
 ?>
 
 <html>
@@ -80,50 +94,41 @@ div {
 <div class="container">
 <br /><br />
 The connection to the database failed with the settings you entered.<br /><br />
-<form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
+<form action="<?=$_SERVER['PHP_SELF']?>" method="POST">
 <input type="hidden" name="doanyway" value="true">
-<input type="hidden" name="wpfile" value="<?php echo $_POST["wpfile"]; ?>">
-<input type="hidden" name="DB_NAME" value="<?php echo $_POST["DB_NAME"]; ?>">
-<input type="hidden" name="DB_USER" value="<?php echo $_POST["DB_USER"]; ?>">
-<input type="hidden" name="DB_PASSWORD" value="<?php echo $_POST["DB_PASSWORD"]; ?>">
-<input type="hidden" name="DB_HOST" value="localhost" value="<?php echo $_POST["DB_HOST"]; ?>">
-<input type="hidden" name="SECRET_KEY" value="<?php echo $_POST["SECRET_KEY"]; ?>">
-<input type="hidden" name="AUTH_KEY" value="<?php echo $_POST["AUTH_KEY"]; ?>">
-<input type="hidden" name="SECURE_AUTH_KEY" value="<?php echo $_POST["SECURE_AUTH_KEY"]; ?>">
-<input type="hidden" name="LOGGED_IN_KEY" value="<?php echo $_POST["LOGGED_IN_KEY"]; ?>">
-<input type="hidden" name="NONCE_KEY" value="<?php echo $_POST["NONCE_KEY"]; ?>">
-<input type="hidden" name="AUTH_SALT" value="<?php echo $_POST["AUTH_SALT"]; ?>">
-<input type="hidden" name="SECURE_AUTH_SALT" value="<?php echo $_POST["SECURE_AUTH_SALT"]; ?>">
-<input type="hidden" name="LOGGED_IN_SALT" value="<?php echo $_POST["LOGGED_IN_SALT"]; ?>">
-<input type="hidden" name="NONCE_SALT" value="<?php echo $_POST["NONCE_SALT"]; ?>">
-<input type="hidden" name="table_prefix" value="<?php echo $_POST["table_prefix"]; ?>">
-<input type="radio" name="process" value="false" checked>&nbsp;Let me edit the values.<br />
-<input type="radio" name="process" value="true">&nbsp;That's ok, proceed anyway.<br /><br />
+<input type="hidden" name="wpfile" value="<?=$_POST["wpfile"]?>">
+<input type="hidden" name="DB_NAME" value="<?=$_POST["DB_NAME"]?>">
+<input type="hidden" name="DB_USER" value="<?=$_POST["DB_USER"]?>">
+<input type="hidden" name="DB_PASSWORD" value="<?=$_POST["DB_PASSWORD"]?>">
+<input type="hidden" name="DB_HOST" value="localhost" value="<?=$_POST["DB_HOST"]?>">
+<input type="hidden" name="SECRET_KEY" value="<?=$_POST["SECRET_KEY"]?>">
+<input type="hidden" name="AUTH_KEY" value="<?=$_POST["AUTH_KEY"]?>">
+<input type="hidden" name="SECURE_AUTH_KEY" value="<?=$_POST["SECURE_AUTH_KEY"]?>">
+<input type="hidden" name="LOGGED_IN_KEY" value="<?=$_POST["LOGGED_IN_KEY"]?>">
+<input type="hidden" name="NONCE_KEY" value="<?=$_POST["NONCE_KEY"]?>">
+<input type="hidden" name="AUTH_SALT" value="<?=$_POST["AUTH_SALT"]?>">
+<input type="hidden" name="SECURE_AUTH_SALT" value="<?=$_POST["SECURE_AUTH_SALT"]?>">
+<input type="hidden" name="LOGGED_IN_SALT" value="<?=$_POST["LOGGED_IN_SALT"]?>">
+<input type="hidden" name="NONCE_SALT" value="<?=$_POST["NONCE_SALT"]?>">
+<input type="hidden" name="table_prefix" value="<?=$_POST["table_prefix"]?>">
+<input id="edit_values" type="radio" name="process" value="false" checked><label for="edit_values">Let me edit the values.</label><br />
+<input id="proceed_anyway" type="radio" name="process" value="true"><label for="proceed_anyway">That's ok, proceed anyway.</label><br /><br />
 <input type="submit" value="Continue">
 </form>
 <?php
 	} else {
-		exec("tar zxvf ".$_POST["wpfile"], $buff);
-		exec("mv -f ".$dir."/wordpress/* ".$dir."", $buff2);
-		exec("rm -rf wordpress", $buff3);
-		exec("rm ".$_POST["wpfile"], $buff4);
+        if (empty($_POST["wpfile"])) {
+            $_POST["wpfile"] = "wordpress.zip";
+        }
+		exec("unzip ".$_POST["wpfile"]);
+		exec("mv -f ".$dir."/wordpress/* ".$dir);
+		exec("rm -rf wordpress");
+		exec("rm ".$_POST["wpfile"]);
 		if(!file_exists(dirname(__FILE__)."/wp-config-sample.php")){
 			echo "Operation appears to have failed.<br />\n";
 		}else{
 			$config = file_get_contents(dirname(__FILE__)."/wp-config-sample.php");
 
-			// pre-3.0 replacements
-			$config = str_replace("putyourdbnamehere", $_POST["DB_NAME"], $config);
-			$config = str_replace("usernamehere", $_POST["DB_USER"], $config);
-			$config = str_replace("yourpasswordhere", $_POST["DB_PASSWORD"], $config);
-			$config = str_replace("localhost", $_POST["DB_HOST"], $config);
-			$config = str_replace("'SECRET_KEY', 'put your unique phrase here'", "'SECRET_KEY', '".$_POST["SECRET_KEY"]."'", $config);
-			$config = str_replace("'AUTH_KEY', 'put your unique phrase here'", "'AUTH_KEY', '".$_POST["AUTH_KEY"]."'", $config);
-			$config = str_replace("'SECURE_AUTH_KEY', 'put your unique phrase here'", "'SECURE_AUTH_KEY', '".$_POST["SECURE_AUTH_KEY"]."'", $config);
-			$config = str_replace("'LOGGED_IN_KEY', 'put your unique phrase here'", "'LOGGED_IN_KEY', '".$_POST["LOGGED_IN_KEY"]."'", $config);
-			$config = str_replace("'NONCE_KEY', 'put your unique phrase here'", "'NONCE_KEY', '".$_POST["NONCE_KEY"]."'", $config);
-
-		// 3.0 replacements
 			$config = str_replace("database_name_here", $_POST["DB_NAME"], $config);
 			$config = str_replace("username_here", $_POST["DB_USER"], $config);
 			$config = str_replace("password_here", $_POST["DB_PASSWORD"], $config);
@@ -252,7 +257,7 @@ div {
 	padding: 10px;
 }
 </style>
-<script>
+<script type="text/javascript">
 function check_avail_dbs(user, pass, host) {
 	if (user=="") {
 		document.getElementById("available_dbs").innerHTML="";
@@ -266,12 +271,11 @@ function check_avail_dbs(user, pass, host) {
 			document.getElementById("available_dbs").innerHTML=xmlhttp.responseText;
 		}
 	}
-	xmlhttp.open("POST","<?php echo $_SERVER['PHP_SELF']; ?>",true);
+	xmlhttp.open("POST","<?=$_SERVER['PHP_SELF']?>",true);
 	xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 	thedata="check=1&user="+user+"&pass="+pass+"&host="+host
 	xmlhttp.send(thedata);
 }
-
 
 function create_database(user, pass, host, database) {
 	if (user=="") {
@@ -286,7 +290,7 @@ function create_database(user, pass, host, database) {
 			document.getElementById("create_status").innerHTML=xmlhttp.responseText;
 		}
 	}
-	xmlhttp.open("POST","<?php echo $_SERVER['PHP_SELF']; ?>",true);
+	xmlhttp.open("POST","<?=$_SERVER['PHP_SELF']?>",true);
 	xmlhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
 	thedata="create=1&user="+user+"&pass="+pass+"&host="+host+"&database="+database
 	xmlhttp.send(thedata);
@@ -296,29 +300,29 @@ function create_database(user, pass, host, database) {
 <body>
 <h2>EasyWP WordPress Installer</h1>
 <div class="container">
-	<form action="<?php echo $_SERVER['PHP_SELF']; ?>" method="POST">
+	<form action="<?=$_SERVER['PHP_SELF']?>" method="POST">
 	<input type="hidden" name="process" value="true">
-	<input type="hidden" name="wpfile" value="<?php echo $availfiles[0]; ?>">
+	<input type="hidden" name="wpfile" value="<?=$availfiles[0]?>">
 	<div class="gray">
 		The MySQL username (<em>must be a valid user for the database entered above</em>):<br />
-		<input type="text" name="DB_USER" size="25" value="<?php echo $db_user; ?>" id="user"><br />
+		<input type="text" name="DB_USER" size="25" value="<?=$db_user?>" id="user"><br />
 	</div>
 	<div class="white">
 		The MySQL password (<em>this is the password for the database user entered above</em>):<br >
-		<input type="text" name="DB_PASSWORD" size="25" value="<?php echo $db_password; ?>" id="pass"><br />
+		<input type="text" name="DB_PASSWORD" size="25" value="<?=$db_password?>" id="pass"><br />
 	</div>
 	<div class="gray">
 		The host MySQL runs on (<em>99% chance you won't need to change this value</em>):<br />
-		<input type="text" name="DB_HOST" value="localhost" size="25" value="<?php echo $db_host; ?>" id="host"><br />
-		<input type="hidden" name="SECRET_KEY" value="<?php echo $secret_key; ?>">
-		<input type="hidden" name="AUTH_KEY" value="<?php echo $auth_key; ?>">
-		<input type="hidden" name="SECURE_AUTH_KEY" value="<?php echo $secure_auth_key; ?>">
-		<input type="hidden" name="LOGGED_IN_KEY" value="<?php echo $logged_in_key; ?>">
-		<input type="hidden" name="NONCE_KEY" value="<?php echo $nonce_key; ?>">
-		<input type="hidden" name="AUTH_SALT" value="<?php echo $auth_salt; ?>">
-		<input type="hidden" name="SECURE_AUTH_SALT" value="<?php echo $secure_auth_salt; ?>">
-		<input type="hidden" name="LOGGED_IN_SALT" value="<?php echo $logged_in_salt; ?>">
-		<input type="hidden" name="NONCE_SALT" value="<?php echo $nonce_salt; ?>">
+		<input type="text" name="DB_HOST" value="localhost" size="25" value="<?=$db_host?>" id="host"><br />
+		<input type="hidden" name="SECRET_KEY" value="<?=$secret_key?>">
+		<input type="hidden" name="AUTH_KEY" value="<?=$auth_key?>">
+		<input type="hidden" name="SECURE_AUTH_KEY" value="<?=$secure_auth_key?>">
+		<input type="hidden" name="LOGGED_IN_KEY" value="<?=$logged_in_key?>">
+		<input type="hidden" name="NONCE_KEY" value="<?=$nonce_key?>">
+		<input type="hidden" name="AUTH_SALT" value="<?=$auth_salt?>">
+		<input type="hidden" name="SECURE_AUTH_SALT" value="<?=$secure_auth_salt?>">
+		<input type="hidden" name="LOGGED_IN_SALT" value="<?=$logged_in_salt?>">
+		<input type="hidden" name="NONCE_SALT" value="<?=$nonce_salt?>">
 	</div>
 	<div class="white">
 		Fill in the above fields and then click:<br />
@@ -326,12 +330,12 @@ function create_database(user, pass, host, database) {
 	</div>
 	<div class="gray">
 		The name of the database you wish to install WordPress into (<em>database must already exist</em>):<br />
-		<!-- <input type="text" name="DB_NAME" size="25" value="<?php echo $db_name; ?>"><br /> -->
+		<!-- <input type="text" name="DB_NAME" size="25" value="<?=$db_name?>"><br /> -->
 		<span id="available_dbs"></span>
 	</div>
 	<div class="white">
 		You can have multiple WordPress installations in one database if you give each a unique prefix:<br />
-		<input type="text" name="table_prefix" value="<?php echo $table_prefix; ?>" size="25"> (Only numbers, letters, and underscores please!)<br />
+		<input type="text" name="table_prefix" value="<?=$table_prefix?>" size="25"> (Only numbers, letters, and underscores please!)<br />
 	</div>
 	<input type="submit" value="Install WordPress">
 	</form>
