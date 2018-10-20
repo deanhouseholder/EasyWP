@@ -1,0 +1,45 @@
+Main Form page:
+
+  Fill out user/pass/host and click "Check available databases":
+    POST:
+      check: 1
+      user, pass, host
+
+  Fill out new database name:
+    POST:
+      create: 1
+      user, pass, host, database
+
+  Select a database from pulldown and click Install WordPress:
+    POST:
+      process: true
+      wpfile: wordpress.zip
+      DB_USER, DB_PASSWORD, DB_HOST, DB_NAME
+      RANDOM_ENCRYPTED_STRINGS
+      createnew:
+      table_prefix: wp_
+
+
+--------------
+
+
+Interstitial DB Error Page:
+
+  Let me edit the values.
+    POST:
+      process: false
+      doanyway: true
+      wpfile: wordpress.zip
+      DB_USER, DB_PASSWORD, DB_HOST, DB_NAME
+      RANDOM_ENCRYPTED_STRINGS
+      table_prefix: wp_
+
+  That's ok, proceed anyway.
+    POST:
+      process: true
+      doanyway: true
+      wpfile: wordpress.zip
+      DB_USER, DB_PASSWORD, DB_HOST, DB_NAME
+      RANDOM_ENCRYPTED_STRINGS
+      table_prefix: wp_
+
